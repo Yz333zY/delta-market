@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三角洲行动 · 实时物价</title>
+    <meta name="description" content="三角洲行动游戏实时物价追踪 - 真实交易行数据 / 价格曲线 / 统计记录">
+    <meta name="theme-color" content="#070b18">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="bg" id="bgCanvas" aria-hidden="true"></div>
+    <div class="aurora" aria-hidden="true"></div>
+
+    <div class="site-wrap">
+        <!-- 顶部导航 -->
+        <nav class="nav glass">
+            <div class="nav-brand">
+                <span class="logo">⚡</span>
+                <span class="brand-text">DELTA <em>MARKET</em></span>
+            </div>
+            <div class="nav-right">
+                <span class="live-pill"><span class="dot"></span> LIVE</span>
+                <button class="icon-btn" id="soundToggle" title="音效开关">🔊</button>
+            </div>
+        </nav>
+
+        <!-- 主标题 -->
+        <header class="hero">
+            <h1 class="hero-title">三角洲行动 <span>·</span> 实时物价</h1>
+            <p class="hero-sub">REAL MARKET · LIVE TRACKER</p>
+        </header>
+
+        <!-- 状态栏 -->
+        <section class="stats glass" id="statsBar">
+            <div class="stat">
+                <label>数据源</label>
+                <b><span id="dataSource">--</span></b>
+            </div>
+            <div class="stat">
+                <label>最后更新</label>
+                <b id="lastUpdate">--:--:--</b>
+            </div>
+            <div class="stat">
+                <label>物品总数</label>
+                <b id="itemCount">0</b>
+            </div>
+            <div class="stat">
+                <label>记录快照</label>
+                <b id="refreshCount">0</b>
+            </div>
+        </section>
+
+        <!-- 控制栏 -->
+        <section class="controls glass">
+            <input type="text" class="search" id="searchBox" placeholder="🔍 搜索物品名称 / 分类...">
+            <div class="chip-group" id="catFilter">
+                <button class="chip active" data-cat="all">全部</button>
+            </div>
+            <button class="btn-refresh" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                <span>刷新物价</span>
+            </button>
+        </section>
+
+        <!-- 大折线图面板 -->
+        <section class="chart-panel glass" id="chartPanel">
+            <div class="chart-head">
+                <div class="chart-title-wrap">
+                    <span class="chart-badge" id="chartIcon">🔫</span>
+                    <div>
+                        <div class="chart-name" id="chartName">--</div>
+                        <div class="chart-cat" id="chartCat">--</div>
+                    </div>
+                </div>
+                <div class="chart-price-wrap">
+                    <div class="chart-price" id="chartPrice">--</div>
+                    <span class="chart-change" id="chartChange">--</span>
+                </div>
+                <select class="chart-select" id="chartSelect" title="选择物品查看走势"></select>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="priceChart" height="340"></canvas>
+            </div>
+            <div class="chart-tip">📊 24小时价格曲线 · 最近 <span id="chartPts">0</span> 条记录</div>
+        </section>
+
+        <!-- 统计记录面板 -->
+        <section class="rec-panel glass">
+            <div class="rec-head">
+                <div class="rec-title">📈 统计记录</div>
+                <span class="rec-sub" id="recSub">--</span>
+            </div>
+            <div class="rec-body">
+                <div class="rec-bars">
+                    <div class="rec-bar-row">
+                        <span class="rec-bar-label up">▲ 上涨</span>
+                        <div class="rec-bar-track"><i class="rec-bar up" id="barUp"></i></div>
+                        <b id="numUp">0</b>
+                    </div>
+                    <div class="rec-bar-row">
+                        <span class="rec-bar-label down">▼ 下跌</span>
+                        <div class="rec-bar-track"><i class="rec-bar down" id="barDown"></i></div>
+                        <b id="numDown">0</b>
+                    </div>
+                    <div class="rec-bar-row">
+                        <span class="rec-bar-label flat">― 持平</span>
+                        <div class="rec-bar-track"><i class="rec-bar flat" id="barFlat"></i></div>
+                        <b id="numFlat">0</b>
+                    </div>
+                </div>
+                <div class="rec-list" id="recList">
+                    <div class="rec-empty">暂无记录，等待首次刷新…</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 价格卡片网格 -->
+        <main class="grid" id="priceGrid" aria-live="polite"></main>
+
+        <!-- 空状态 -->
+        <div class="empty" id="emptyState" hidden>
+            <div class="empty-icon">🔍</div>
+            <p>没有找到匹配的物品</p>
+        </div>
+
+        <!-- 加载状态 -->
+        <div class="loading" id="loadingState" hidden>
+            <div class="spinner"></div>
+            <p>正在连接真实数据源...</p>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast" role="status"></div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>DELTA MARKET &copy; 2026 · 数据来自三角洲数据帝实时交易行 · 数据仅供参考</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
